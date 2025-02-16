@@ -13,9 +13,11 @@ START_IMAGE = "https://envs.sh/Q_x.jpg"
 
 # MongoDB Setup
 MONGO_URI = "mongodb+srv://uramit0001:EZ1u5bfKYZ52XeGT@cluster0.qnbzn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+from pymongo import MongoClient
 client = pymongo.MongoClient(MONGO_URI)
 db = client["KarmaDB"]
 users_collection = db["Users"]
+countdown_collection = db["countdowns"]
 
 # Pyrogram Client
 app = Client("KarmaBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
