@@ -243,7 +243,7 @@ async def resume_countdowns(app, countdown_collection):
 async def main():
     await app.start()  # Start the bot
     await set_bot_commands()  # Set bot commands
-    await resume_countdowns()  # Resume countdowns from database
+    await resume_countdowns(app, countdown_collection)  # Resume countdowns from database
     await app.idle()  # Keep the bot running
 
 asyncio.run(main())  # Run the bot
