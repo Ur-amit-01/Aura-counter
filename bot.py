@@ -90,8 +90,8 @@ async def increase_aura(_, message: Message):
         
         await message.reply_text(f"🔥 {replied_user_name} gained +1 Aura! (Total: {new_aura})")
 
-# Check Aura Level
-@app.on_message(filters.command("level"))
+# Check karma Level
+@app.on_message(filters.command("leaderboard"))
 async def check_aura(_, message: Message):
     user_id = message.from_user.id
     user_data = users_collection.find_one({"user_id": user_id})
@@ -107,13 +107,20 @@ async def check_aura(_, message: Message):
 # Show Top Aura Holders
 @app.on_message(filters.command("top"))
 async def show_leaderboard(_, message: Message):
-    top_users = users_collection.find().sort("aura", -1).limit(5)
-    leaderboard = "\n".join([f"🥇 {user['name']} - {user['aura']} Aura" for user in top_users])
+    top_users = list(users_collection.find().sort("karma_points", -1).limit(5))
     
-    if leaderboard:
-        await message.reply_text(f"🏆 **Aura Leaderboard** 🏆\n{leaderboard}")
-    else:
-        await message.reply_text("No one has earned Aura yet!")
+    if not top_users:
+        await message.reply_text("No one has earned Karma Points yet!")
+        return
+
+    medals = ["🥇", "🥈", "🥉"]  # Emojis for 1st, 2nd, and 3rd place
+    leaderboard = ""
+
+    for i, user in enumerate(top_users):
+        medal = medals[i] if i < 3 else "🎖️"  # Use a default medal for others
+        leaderboard += f"{medal} {user['name']} - {user['karma_points']} Karma Points\n"
+
+    await message.reply_text(f"🏆 **Karma Leaderboard** 🏆\n\n{leaderboard}")
 
 # Run the Bot
 app.run()
