@@ -41,7 +41,7 @@ async def set_bot_commands():
         BotCommand("setcountdown", "Set a countdown (Event Name + Time in Seconds)"),
         BotCommand("stopcountdown", "Stop the current countdown"),
     ]
-    await app.set_my_commands(commands)
+    await app.set_bot_commands(commands)
     print("✅ Bot commands set successfully!")
 
 # Start Command
