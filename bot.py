@@ -251,4 +251,4 @@ async def main():
     await resume_countdowns(app, countdown_collection)  # Resume countdowns from database
     await app.idle()  # Keep the bot running
 
-asyncio.run(main())  # Run the bot
+app.run()  # Run the bot
