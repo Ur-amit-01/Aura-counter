@@ -6,8 +6,8 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, 
 API_ID = "22012880"
 API_HASH = "5b0e07f5a96d48b704eb9850d274fe1d"
 BOT_TOKEN = "8090987232:AAErYh4-Ji5Q1sYn3qV1JKRPrKIxSkrKGVw"
-DEVELOPER_LINK = "https://t.me/Axa_bachha"  # Replace with your Telegram profile link
-START_IMAGE = "https://envs.sh/Q_x.jpg"  # Replace with an image URL
+DEVELOPER_LINK = "https://t.me/Axa_bachha"  
+START_IMAGE = "https://envs.sh/Q_x.jpg"  
 
 # MongoDB Setup
 MONGO_URI = "mongodb+srv://uramit0001:EZ1u5bfKYZ52XeGT@cluster0.qnbzn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
@@ -44,19 +44,16 @@ async def start_message(_, message: Message):
         reply_markup=buttons
     )
 
-# Help Button Callback
+# Help Button
 @app.on_callback_query(filters.regex("help"))
 async def help_callback(_, query: CallbackQuery):
-    buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔙 Back", callback_data="start")]
-    ])
+    buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="start")]])
     
     await query.message.edit_text(
         "**❓ Help Menu**\n\n"
         "✅ Reply with `+1` to give someone Karma.\n"
         "✅ Reply with `-1` to reduce someone's Karma.\n"
-        "✅ Use `/level` to check your rank.\n"
-        "✅ Use `/top` to see the leaderboard.\n",
+        "✅ Use `/level` to check your rank.\n",
         reply_markup=buttons
     )
 
@@ -73,33 +70,35 @@ async def back_to_start(_, query: CallbackQuery):
         reply_markup=buttons
     )
 
-# Increase or Decrease Karma when replying with "+1" or "-1"
+# Modify Karma (+1 or -1)
 @app.on_message(filters.reply & filters.text)
 async def modify_karma(_, message: Message):
     if message.text.strip() not in ["+1", "-1"]:
-        return  # Ignore messages that are not "+1" or "-1"
+        return  
 
-    replied_user_id = message.reply_to_message.from_user.id
-    replied_user_name = message.reply_to_message.from_user.first_name
-    sender_user_id = message.from_user.id
+    sender_id = message.from_user.id
+    receiver_id = message.reply_to_message.from_user.id
+    receiver_name = message.reply_to_message.from_user.first_name
 
-    if replied_user_id == sender_user_id:
+    if sender_id == receiver_id:
         await message.reply_text("❌ You can't modify your own Karma Points!")
         return
 
-    user_data = users_collection.find_one({"user_id": replied_user_id})
+    user_data = users_collection.find_one({"user_id": receiver_id})
     current_karma = user_data["karma_points"] if user_data else 0
 
-    if message.text.strip() == "+1":
-        new_karma = current_karma + 1
-        action_text = f"🔥 {replied_user_name} gained +1 Karma! (Total: {new_karma})"
-    else:
-        new_karma = max(0, current_karma - 1)  # Ensure Karma doesn't go negative
-        action_text = f"💀 {replied_user_name} lost 1 Karma! (Total: {new_karma})"
+    karma_change = 1 if message.text.strip() == "+1" else -1
+    new_karma = max(0, current_karma + karma_change)  
+
+    action_text = (
+        f"🔥 {receiver_name} gained +1 Karma! (Total: {new_karma})" 
+        if karma_change > 0 
+        else f"💀 {receiver_name} lost 1 Karma! (Total: {new_karma})"
+    )
 
     users_collection.update_one(
-        {"user_id": replied_user_id},
-        {"$set": {"user_id": replied_user_id, "name": replied_user_name, "karma_points": new_karma}},
+        {"user_id": receiver_id},
+        {"$set": {"user_id": receiver_id, "name": receiver_name, "karma_points": new_karma}},
         upsert=True
     )
 
@@ -119,7 +118,7 @@ async def check_karma(_, message: Message):
     rank = get_rank(karma)
     await message.reply_text(f"✨ Your Karma: {karma}\n🏆 Rank: {rank}")
 
-# Show Top Karma Holders in a Group
+# Show Top Karma Holders
 @app.on_message(filters.command("top") & filters.group)
 async def show_leaderboard(_, message: Message):
     chat_id = message.chat.id
@@ -129,11 +128,11 @@ async def show_leaderboard(_, message: Message):
         await message.reply_text("No one in this group has earned Karma Points yet!")
         return
 
-    medals = ["🥇", "🥈", "🥉"]  # Emojis for 1st, 2nd, and 3rd place
+    medals = ["🥇", "🥈", "🥉"]
     leaderboard = ""
 
     for i, user in enumerate(top_users):
-        medal = medals[i] if i < 3 else "🎖️"  # Default medal for others
+        medal = medals[i] if i < 3 else "🎖️"
         leaderboard += f"{medal} {user['name']} - {user['karma_points']} Karma Points\n"
 
     await message.reply_text(f"🏆 **Group Karma Leaderboard** 🏆\n\n{leaderboard}")
