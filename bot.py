@@ -8,6 +8,14 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from pyrogram import Client, filters
 
+options = webdriver.ChromeOptions()
+options.add_argument("--headless")  # Run in headless mode
+options.add_argument("--no-sandbox")  
+options.add_argument("--disable-dev-shm-usage")
+
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=options)
+
 # 🔹 Set your bot credentials
 API_ID = "22012880"
 API_HASH = "5b0e07f5a96d48b704eb9850d274fe1d"
