@@ -2,7 +2,7 @@ import time
 import asyncio
 import pymongo
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, BotCommand
 
 # Bot Config
 API_ID = "22012880"
