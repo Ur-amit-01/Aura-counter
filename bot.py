@@ -89,32 +89,38 @@ async def back_to_start(_, query: CallbackQuery):
 # Modify Karma (+1 or -1)
 @app.on_message(filters.reply & filters.text)
 async def modify_karma(_, message: Message):
-    if message.text.strip() not in ["+1", "-1"]:
+    text = message.text.lower().strip()
+    if text not in ["+1", "-1"]:
+        return  
+
+    if not message.reply_to_message or not message.reply_to_message.from_user:
+        await message.reply_text("❌ You can only modify Karma for valid users!")
         return  
 
     sender_id = message.from_user.id
-    receiver_id = message.reply_to_message.from_user.id
-    receiver_name = message.reply_to_message.from_user.first_name
+    receiver = message.reply_to_message.from_user
+    receiver_id = receiver.id
+    receiver_name = receiver.first_name
 
     if sender_id == receiver_id:
         await message.reply_text("❌ You can't modify your own Karma Points!")
         return
 
+    karma_change = 1 if text == "+1" else -1
+
     user_data = users_collection.find_one({"user_id": receiver_id})
     current_karma = user_data["karma_points"] if user_data else 0
-
-    karma_change = 1 if message.text.strip() == "+1" else -1
-    new_karma = max(0, current_karma + karma_change)  
+    new_karma = max(0, current_karma + karma_change)  # Prevents negative Karma
 
     action_text = (
-        f"🔥 {receiver_name} gained +1 Karma! (Total: {new_karma})" 
+        f"🔥 **{receiver_name}** gained +1 Karma! (Total: `{new_karma}`)" 
         if karma_change > 0 
-        else f"💀 {receiver_name} lost 1 Karma! (Total: {new_karma})"
+        else f"💀 **{receiver_name}** lost 1 Karma! (Total: `{new_karma}`)"
     )
 
     users_collection.update_one(
         {"user_id": receiver_id},
-        {"$set": {"user_id": receiver_id, "name": receiver_name, "karma_points": new_karma}},
+        {"$set": {"name": receiver_name}, "$set": {"karma_points": new_karma}},
         upsert=True
     )
 
