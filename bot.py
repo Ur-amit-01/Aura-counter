@@ -174,12 +174,15 @@ async def update_countdown(app, countdown_collection, chat_id, message_id, event
             break
 
         formatted_time = format_time(remaining_time)
+
         try:
             await app.edit_message_text(chat_id, message_id, f"⏳ **{event_name}**\nCountdown: {formatted_time}")
-        except:
-            break  # Stop updating if message is deleted
+        except Exception as e:
+            print(f"Error updating countdown: {e}")
+            countdown_collection.delete_one({"chat_id": chat_id})  # Remove from DB if message is deleted
+            break  # Stop updating
 
-        await asyncio.sleep(5)  # Update every 10 seconds
+        await asyncio.sleep(5)  # Update every 5 seconds
 
 # Start Countdown Command
 @app.on_message(filters.command("setcountdown") & filters.group)
