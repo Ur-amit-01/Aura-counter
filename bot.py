@@ -1,3 +1,5 @@
+import time
+import asyncio
 import pymongo
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
@@ -149,5 +151,99 @@ async def show_leaderboard(_, message: Message):
 
     await message.reply_text(f"🏆 **Group Karma Leaderboard** 🏆\n\n{leaderboard}")
 
-# Run the Bot
-app.run()
+
+###dhhhhhbdjfhbdfjvdfjhvbeuhfvbhjsrvbhierbhusrbchusruhsrvhjsrvhbshjeb
+
+
+# Format time into days, hours, minutes, seconds
+def format_time(seconds):
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    return f"{days}d {hours}h {minutes}m {seconds}s"
+
+# Countdown Task
+async def update_countdown(app, countdown_collection, chat_id, message_id, event_name, end_time):
+    while True:
+        remaining_time = end_time - int(time.time())
+        if remaining_time <= 0:
+            await app.edit_message_text(chat_id, message_id, f"⏳ **{event_name}** countdown is over!")
+            countdown_collection.delete_one({"chat_id": chat_id})
+            break
+
+        formatted_time = format_time(remaining_time)
+        try:
+            await app.edit_message_text(chat_id, message_id, f"⏳ **{event_name}**\nCountdown: {formatted_time}")
+        except:
+            break  # Stop updating if message is deleted
+
+        await asyncio.sleep(5)  # Update every 10 seconds
+
+# Start Countdown Command
+@app.on_message(filters.command("setcountdown") & filters.group)
+async def set_countdown(client: Client, message: Message):
+    args = message.text.split(maxsplit=2)
+    if len(args) < 3:
+        await message.reply_text("Usage: `/setcountdown Event_Name Time_in_seconds`")
+        return
+
+    event_name = args[1]
+    try:
+        time_in_seconds = int(args[2])
+    except ValueError:
+        await message.reply_text("❌ Invalid time! Enter time in seconds.")
+        return
+
+    chat_id = message.chat.id
+
+    # Check if a countdown already exists in this chat
+    existing_countdown = countdown_collection.find_one({"chat_id": chat_id})
+    if existing_countdown:
+        await message.reply_text("❌ A countdown is already running in this chat! Use `/stopcountdown` to cancel it first.")
+        return
+
+    end_time = int(time.time()) + time_in_seconds
+    msg = await message.reply_text(f"⏳ **{event_name}** Countdown: `{format_time(time_in_seconds)}`")
+
+    # Store in database
+    countdown_collection.insert_one({
+        "chat_id": chat_id, "event_name": event_name, "end_time": end_time, "message_id": msg.message_id
+    })
+
+    asyncio.create_task(update_countdown(client, countdown_collection, chat_id, msg.message_id, event_name, end_time))
+
+# Stop Countdown Command
+@app.on_message(filters.command("stopcountdown") & filters.group)
+async def stop_countdown(_, message: Message):
+    chat_id = message.chat.id
+    countdown = countdown_collection.find_one({"chat_id": chat_id})
+
+    if not countdown:
+        await message.reply_text("❌ No active countdown in this chat.")
+        return
+
+    countdown_collection.delete_one({"chat_id": chat_id})
+    await message.reply_text("✅ Countdown stopped successfully.")
+
+# Resume Countdowns on Bot Restart
+async def resume_countdowns(app, countdown_collection):
+    countdowns = countdown_collection.find()
+    for countdown in countdowns:
+        chat_id = countdown["chat_id"]
+        message_id = countdown["message_id"]
+        event_name = countdown["event_name"]
+        end_time = countdown["end_time"]
+
+        remaining_time = end_time - int(time.time())
+        if remaining_time > 0:
+            asyncio.create_task(update_countdown(app, countdown_collection, chat_id, message_id, event_name, end_time))
+        else:
+            countdown_collection.delete_one({"chat_id": chat_id})
+
+async def main():
+    await app.start()  # Start the bot
+    await set_bot_commands()  # Set bot commands
+    await resume_countdowns()  # Resume countdowns from database
+    await app.idle()  # Keep the bot running
+
+asyncio.run(main())  # Run the bot
