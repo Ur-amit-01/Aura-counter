@@ -30,6 +30,18 @@ def get_rank(karma):
             return rank
     return "Unknown"
 
+# Set Commands Function
+async def set_bot_commands():
+    commands = [
+        BotCommand("start", "Start the bot"),
+        BotCommand("level", "Check your Karma rank"),
+        BotCommand("top", "Show group Karma leaderboard"),
+        BotCommand("setcountdown", "Set a countdown (Event Name + Time in Seconds)"),
+        BotCommand("stopcountdown", "Stop the current countdown"),
+    ]
+    await app.set_my_commands(commands)
+    print("✅ Bot commands set successfully!")
+
 # Start Command
 @app.on_message(filters.command("start"))
 async def start_message(_, message: Message):
